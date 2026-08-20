@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  minimum-flutter:
+    runs-on: macos-14
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.16.9
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run Dart tests
+        run: flutter test
+
+      - name: Build minimum-version CocoaPods host
+        run: |
+          host_root="$(mktemp -d)"
+          flutter create --platforms=macos "$host_root/minimum_host"
+          cd "$host_root/minimum_host"
+          cp "$GITHUB_WORKSPACE/.github/fixtures/minimum_macos_Podfile" \
+            macos/Podfile
+          sed -i '' \
+            's/MACOSX_DEPLOYMENT_TARGET = 10.14;/MACOSX_DEPLOYMENT_TARGET = 10.15;/g' \
+            macos/Runner.xcodeproj/project.pbxproj
+          # Flutter 3.16 mistakes a lone path descriptor for a directory.
+          flutter pub add \
+            --directory . \
+            --path "$GITHUB_WORKSPACE" \
+            macos_file_open_handler
+          flutter build macos --debug
+          grep -q macos_file_open_handler macos/Podfile.lock
+
+  test:
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # Validate the committed package before Flutter/Xcode can migrate host files.
+      - name: Validate package archive
+        run: flutter pub publish --dry-run
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run Dart tests
+        run: flutter test
+
+      - name: Run example widget tests
+        working-directory: example
+        run: flutter test test
+
+      - name: Build macOS example
+        working-directory: example
+        run: flutter build macos --debug
+
+      - name: Run native tests
+        working-directory: example
+        run: >-
+          xcodebuild test
+          -workspace macos/Runner.xcworkspace
+          -scheme Runner
+          -configuration Debug
+          -destination 'platform=macOS'
+          CODE_SIGNING_ALLOWED=NO
+
+      - name: Run macOS integration tests
+        working-directory: example
+        run: flutter test integration_test/plugin_integration_test.dart -d macos
+
+      - name: Build using CocoaPods integration
+        run: |
+          flutter config --no-enable-swift-package-manager
+          host_root="$(mktemp -d)"
+          flutter create --platforms=macos "$host_root/cocoapods_host"
+          cd "$host_root/cocoapods_host"
+          flutter pub add \
+            --directory . \
+            --path "$GITHUB_WORKSPACE" \
+            macos_file_open_handler
+          flutter build macos --debug
+          grep -q macos_file_open_handler macos/Podfile.lock
+          flutter config --enable-swift-package-manager
+
+      - name: Run cold-start test
+        run: dart run tool/test_cold_start.dart

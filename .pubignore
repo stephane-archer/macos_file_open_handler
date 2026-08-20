@@ -1,0 +1,33 @@
+# Repository-only automation and tooling.
+/.github/
+/tool/
+
+# Local Dart and Flutter output.
+**/.dart_tool/
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/build/
+**/coverage/
+**/doc/api/
+/pubspec.lock
+
+# IDE, operating-system, and build metadata.
+**/.DS_Store
+**/.build/
+**/.buildlog/
+**/.history/
+**/.idea/
+**/.swiftpm/
+**/.svn/
+**/.vscode/
+**/Flutter/ephemeral/
+**/Pods/
+**/xcuserdata/
+*.class
+*.iml
+*.ipr
+*.iws
+*.log
+*.pyc
+*.swp

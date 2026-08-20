@@ -1,0 +1,30 @@
+name: macos_file_open_handler
+description: Reliable macOS file-open handling for Flutter, with cold-start buffering, preserved batches, and serial async processing.
+version: 0.1.0
+repository: https://github.com/stephane-archer/macos_file_open_handler
+issue_tracker: https://github.com/stephane-archer/macos_file_open_handler/issues
+topics:
+  - macos
+  - files
+  - os-integration
+  - plugins
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  # Flutter 3.16 added macOS application:openURLs: plugin forwarding.
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.2
+
+flutter:
+  plugin:
+    platforms:
+      macos:
+        pluginClass: MacosFileOpenHandlerPlugin
